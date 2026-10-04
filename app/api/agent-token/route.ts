@@ -20,7 +20,10 @@ export async function GET() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ app: agui.pathname.split("/")[2], external_user_id: userId }),
-  });
+  }).catch((e: Error) => e);
+  if (res instanceof Error) {
+    return Response.json({ error: `can't reach ${agui.origin}: ${res.message}` }, { status: 502 });
+  }
   if (!res.ok) return Response.json({ error: await res.text() }, { status: 502 });
   const { token } = await res.json();
   return Response.json({ token });

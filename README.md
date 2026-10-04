@@ -56,10 +56,11 @@ Then deploy the Next.js app anywhere Node runs. Set:
 | `SECTR_AGUI_URL` | the URL `sectr deploy` printed |
 | `SECTR_INVOCATION_KEY` | your app's invocation key (dashboard → Settings → API keys). Server-side only. |
 
-Host it as a long-lived server (`next start`, a container). The Copilot
-Runtime keeps in-flight answers in memory, and that's what lets a reloaded
-page reattach mid-answer. Conversation history itself always comes from
-Sectr.
+Host it as a long-lived server (`next start`, a container). A reloaded page
+gets the conversation, and any answer still in flight, from the Copilot
+Runtime's memory. The turn itself runs on Sectr either way. After a Runtime
+restart, a reopened conversation stays empty until the next message, when
+Sectr sends the full history.
 
 ## How it works
 
