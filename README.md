@@ -1,10 +1,11 @@
 # Sectr + CopilotKit starter
 
-[CopilotKit's quickstart](https://docs.copilotkit.ai/quickstart), with one
-change: the agent runs on [Sectr](https://sectr.dev). Every Sectr route is an
+[CopilotKit's quickstart](https://docs.copilotkit.ai/quickstart), with the
+agent running on [Sectr](https://sectr.dev). Every Sectr route is an
 [AG-UI](https://docs.ag-ui.com) endpoint, so CopilotKit's chat talks to it
 directly. You get streaming, tool calls, and approvals as native interrupts,
-and conversations are durable sessions.
+and conversations are durable sessions: Sectr stores them, so your server
+stores nothing.
 
 - `agent/`: a support agent (OpenAI Agents SDK) with a tool that needs
   human approval. It's the project `sectr init` generates.
@@ -56,23 +57,26 @@ Then deploy the Next.js app anywhere Node runs. Set:
 | `SECTR_AGUI_URL` | the URL `sectr deploy` printed |
 | `SECTR_INVOCATION_KEY` | your app's invocation key (dashboard → Settings → API keys). Server-side only. |
 
-Host it as a long-lived server (`next start`, a container). A reloaded page
-gets the conversation, and any answer still in flight, from the Copilot
-Runtime's memory. The turn itself runs on Sectr either way. After a Runtime
-restart, a reopened conversation stays empty until the next message, when
-Sectr sends the full history.
+The app's server is stateless: the Copilot Runtime runs with `SectrRunner`,
+which keeps no copy of any conversation. A reloaded page, a second device, a
+restarted or serverless instance all get the conversation from Sectr. Host it
+however you like (Vercel, a container, `next start`).
 
 ## How it works
 
 | File | What it does |
 | --- | --- |
-| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with an `HttpAgent` pointed at `SECTR_AGUI_URL` (the quickstart uses `BuiltInAgent` here) |
+| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with an `HttpAgent` pointed at `SECTR_AGUI_URL` (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
+| `lib/sectr-runner.ts` | Replaces CopilotKit's default in-memory runner: runs and reconnects go straight to Sectr, so the server holds no conversation state |
 | `app/api/agent-token/route.ts` | Mints a Sectr user token (`sks_…`) for the current user. This is the only place the invocation key is used. |
 | `app/providers.tsx` | Fetches the token once per page load and passes it to CopilotKit. The Runtime forwards it to Sectr. |
 | `app/chat.tsx` | `CopilotSidebar`, plus `useInterrupt` for the approve/deny UI |
 | `proxy.ts` | Stand-in for your auth: an anonymous user id cookie, and a `?thread=` id per conversation |
 
-A user token can only see conversations owned by the user it was minted for.
+A user token can only see conversations owned by the user it was minted for,
+and because the Runtime keeps nothing, there's no copy anywhere else for
+another user to reach. (CopilotKit's default in-memory runner serves every
+thread in its memory to any caller, which is why this starter replaces it.)
 In your app, replace the anonymous cookie with your signed-in user's id. Sectr
 never authenticates your users; it trusts your backend's mint call.
 
