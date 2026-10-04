@@ -3,14 +3,18 @@
 Selected by `app.py` when `OPENAI_API_KEY` is unset. Uses the
 openai-agents SDK's public testing helper (`agents.testing.ScriptedModel`).
 
-Every model call is classified from the conversation it
-receives (the same rules a real model follows, scripted):
+Every model call is classified from what it must answer, the
+conversation's last item (the same rules a real model follows, scripted),
+so each message behaves the same however long the conversation is:
 
-- a `refund` function_call already in the conversation → the approval
-  decision landed; emit the closing text (refunded, or not if denied).
-- no tool history at all → first turn: text + `lookup_order` call.
-- otherwise → a user message mentioning "refund" emits the gated
-  `refund` call (→ approval pause); anything else closes the lookup turn.
+- a `refund` result → the approval decision landed; emit the closing
+  text (refunded, or not if denied).
+- a `lookup_order` result → the lookup returned; report it.
+- a user message mentioning "refund" → the gated `refund` call
+  (→ approval pause); any other message → text + a `lookup_order` call.
+
+Tool-call ids carry the conversation length, so they stay unique across a
+thread (as a real model's do).
 """
 
 from __future__ import annotations
@@ -46,33 +50,33 @@ def _call(cid: str, name: str, args: str) -> ResponseFunctionToolCall:
     )
 
 
-def _is_refund_call(item: Any) -> bool:
-    return (
-        isinstance(item, dict)
-        and item.get("type") == "function_call"
-        and item.get("name") == "refund"
-    )
-
-
 def _classify(call: Any):
-    """ModelResponder: pick the scripted step from the conversation."""
+    """ModelResponder: pick the scripted step from the conversation's last item."""
     items = call.input if isinstance(call.input, list) else []
-    if any(_is_refund_call(i) for i in items):
-        if "not approved" in str(items[-1]):
-            return [_message("Okay — I won't refund order 123.", "m_close")]
-        return [_message("Refund processed — anything else?", "m_close")]
-    if not any(isinstance(i, dict) and i.get("type") == "function_call" for i in items):
-        return [
-            _message("Let me check that order.", "m1"),
-            _call("c_lookup", "lookup_order", '{"order_id": "123"}'),
-        ]
-    last_user = next(
-        (i for i in reversed(items) if isinstance(i, dict) and i.get("role") == "user"),
-        {},
-    )
-    if "refund" in str(last_user.get("content", "")):
-        return [_call("c_refund", "refund", '{"order_id": "123"}')]
-    return [_message("Good news — order 123 shipped!", "m2")]
+    last = items[-1] if items and isinstance(items[-1], dict) else {}
+    if last.get("type") == "function_call_output":
+        tool = next(
+            (
+                i.get("name")
+                for i in items
+                if isinstance(i, dict)
+                and i.get("type") == "function_call"
+                and i.get("call_id") == last.get("call_id")
+            ),
+            None,
+        )
+        if tool == "refund":
+            if "not approved" in str(last.get("output")):
+                return [_message("Okay — I won't refund order 123.", "m_close")]
+            return [_message("Refund processed — anything else?", "m_close")]
+        return [_message("Good news — order 123 shipped!", "m2")]
+    n = len(items)
+    if "refund" in str(last.get("content", "")).lower():
+        return [_call(f"c_refund_{n}", "refund", '{"order_id": "123"}')]
+    return [
+        _message("Let me check that order.", "m1"),
+        _call(f"c_lookup_{n}", "lookup_order", '{"order_id": "123"}'),
+    ]
 
 
 class _PerCallModel(ScriptedModel):
