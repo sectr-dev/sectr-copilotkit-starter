@@ -13,11 +13,10 @@ const sectrAgent = new HttpAgent({
 });
 
 // SectrRunner keeps this server stateless: conversations live on Sectr, and
-// every read goes there with the user's token (lib/sectr-runner.ts).
-const runtime = new CopilotRuntime({
-  agents: { default: sectrAgent },
-  runner: new SectrRunner(),
-});
+// every read goes there with the user's token (lib/sectr-runner.ts). It gets
+// the same agents map, to know where to reconnect a reloaded page.
+const agents = { default: sectrAgent };
+const runtime = new CopilotRuntime({ agents, runner: new SectrRunner({ agents }) });
 
 const handler = createCopilotRuntimeHandler({
   runtime,
