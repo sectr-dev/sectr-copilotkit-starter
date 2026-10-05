@@ -1,17 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Stand-in for your app's auth: this sample has no login, so every browser
-// gets an anonymous user id cookie. Each page also gets a conversation
+// gets an anonymous user id cookie. Each chat page also gets a conversation
 // (?thread=…): the conversation lives on Sectr, the URL just names it, so a
 // refresh lands back in the same session. Sectr thread ids are UUIDs, so a
-// missing or malformed one starts a fresh conversation.
+// missing or malformed one starts a fresh conversation on the same page.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const response = UUID.test(url.searchParams.get("thread") ?? "")
     ? NextResponse.next()
-    : NextResponse.redirect(new URL(`/?thread=${crypto.randomUUID()}`, url));
+    : NextResponse.redirect(new URL(`${url.pathname}?thread=${crypto.randomUUID()}`, url));
   if (!request.cookies.has("uid")) {
     response.cookies.set("uid", crypto.randomUUID(), {
       httpOnly: true,
@@ -22,4 +22,4 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: "/" };
+export const config = { matcher: ["/", "/langgraph"] };
