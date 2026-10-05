@@ -21,13 +21,16 @@ npm install
 cd agent && sectr dev
 ```
 
-`sectr dev` prints `🔌 connect via AG-UI at: https://local.sectr.dev:<port>/ag-ui/support-agent/chat`.
-In a second terminal, from the repo root:
+`sectr dev` prints `🔌 connect via AG-UI at: https://local.sectr.dev:8420/ag-ui/support-agent/chat`,
+which `.env.development` already points at. In a second terminal, from the
+repo root:
 
 ```sh
-echo "SECTR_AGUI_URL=<that URL>" > .env.local
 npm run dev
 ```
+
+If `sectr dev` says it picked another port (8420 was busy), put the URL it
+printed in `.env.local`: `SECTR_AGUI_URL=<that URL>`.
 
 Open http://localhost:3000 and try these:
 
