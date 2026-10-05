@@ -67,11 +67,14 @@ however you like (Vercel, a container, `next start`).
 | File | What it does |
 | --- | --- |
 | `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with an `HttpAgent` pointed at `SECTR_AGUI_URL` (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
-| `lib/sectr-runner.ts` | Replaces CopilotKit's default in-memory runner: runs and reconnects go straight to Sectr, so the server holds no conversation state |
 | `app/api/agent-token/route.ts` | Mints a Sectr user token (`sks_…`) for the current user. This is the only place the invocation key is used. |
 | `app/providers.tsx` | Fetches the token once per page load and passes it to CopilotKit. The Runtime forwards it to Sectr. |
 | `app/chat.tsx` | `CopilotSidebar`, plus `useInterrupt` for the approve/deny UI |
 | `proxy.ts` | Stand-in for your auth: an anonymous user id cookie, and a `?thread=` id per conversation |
+
+`SectrRunner` comes from the [`@sectr/copilotkit`](https://www.npmjs.com/package/@sectr/copilotkit)
+package. It replaces CopilotKit's default in-memory runner: runs and
+reconnects go straight to Sectr, so the server holds no conversation state.
 
 A user token can only see conversations owned by the user it was minted for,
 and because the Runtime keeps nothing, there's no copy anywhere else for
@@ -91,3 +94,7 @@ SECTR_AGUI_URL=... [SECTR_INVOCATION_KEY=...] npm run smoke
 The smoke test runs a full turn, an approval interrupt, and the resume. It
 works against `sectr dev` or a deployed agent. CI runs it daily against the
 live demo agent.
+
+## License
+
+MIT
