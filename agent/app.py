@@ -1,9 +1,15 @@
-"""Your Sectr agent — the support agent on the OpenAI Agents SDK.
+"""Your Sectr agent — the support agent, served on two routes:
 
-Everything here is ordinary openai-agents code: zero platform concepts
+- `/chat_oai`: the OpenAI Agents SDK agent defined below.
+- `/chat_langgraph`: the same agent on LangGraph (support_graph.py).
+
+Sectr serves AG-UI for every route whatever the framework, so the frontend
+talks to both the same way.
+
+The OpenAI agent is ordinary openai-agents code: zero platform concepts
 leak into the agent definition; the only sectr touchpoints are `AgentApp`
-and one adapter line (the adapter maps the SDK's native streaming events
-and HITL interruptions onto the platform contract).
+and one adapter line per route (the adapter maps the framework's native
+streaming events and HITL interruptions onto the platform contract).
 
 Model selection:
 - `OPENAI_API_KEY` set → the real model, on the standard OpenAI API.
@@ -15,9 +21,11 @@ from agents import (
     Agent,
 )
 from sectr import AgentApp
+from sectr.adapters.langgraph import langgraph
 from sectr.adapters.openai_agents import openai_agents
 
 from fake import setup_model
+from support_graph import graph
 from tools import lookup_order, refund
 
 # If OPENAI_API_KEY is set, uses gpt-4o-mini, otherwise uses a mock model. To set OPENAI_API_KEY:
@@ -37,4 +45,5 @@ agent = Agent(
 )
 
 app = AgentApp(name="support-agent", env=["OPENAI_API_KEY"])
-app.add_route("/chat", openai_agents(agent, model=model))
+app.add_route("/chat_oai", openai_agents(agent, model=model))
+app.add_route("/chat_langgraph", langgraph(graph))

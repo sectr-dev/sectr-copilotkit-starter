@@ -20,7 +20,7 @@ jobs:
       - run: npm run lint
       - run: npm run build
         env:
-          SECTR_AGUI_URL: https://api.sectr.dev/ag-ui/support-agent/chat
+          SECTR_AGUI_URL: https://api.sectr.dev/ag-ui/support-agent/chat_oai
 
   # Against the live demo agent (`agent/`, deployed on Sectr). Needs the repo
   # secrets below, so it is skipped on forks.

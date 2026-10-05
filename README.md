@@ -7,9 +7,11 @@ directly. You get streaming, tool calls, and approvals as native interrupts,
 and conversations are durable sessions: Sectr stores them, so your server
 stores nothing.
 
-- `agent/`: a support agent (OpenAI Agents SDK) with a tool that needs
-  human approval. It's the project `sectr init` generates.
-- Everything else: a Next.js app with a CopilotKit chat.
+- `agent/`: a support agent with a tool that needs human approval, served on
+  two routes: `/chat_oai` (OpenAI Agents SDK, the agent `sectr init`
+  generates) and `/chat_langgraph` (the same agent on LangGraph).
+- Everything else: a Next.js app with a CopilotKit chat, one page per
+  route.
 
 ## Run it locally (no keys needed)
 
@@ -21,18 +23,26 @@ npm install
 cd agent && sectr dev
 ```
 
-`sectr dev` prints `🔌 connect via AG-UI at: https://local.sectr.dev:8420/ag-ui/support-agent/chat`,
-which `.env.development` already points at. In a second terminal, from the
-repo root:
+`sectr dev` prints one AG-UI URL per route:
+
+```
+- 🔌 connect via AG-UI at: https://local.sectr.dev:8420/ag-ui/support-agent/chat_oai
+- 🔌 connect via AG-UI at: https://local.sectr.dev:8420/ag-ui/support-agent/chat_langgraph
+```
+
+`.env.development` already points at the first; the app derives the
+LangGraph URL from it. In a second terminal, from the repo root:
 
 ```sh
 npm run dev
 ```
 
-If `sectr dev` says it picked another port (8420 was busy), put the URL it
-printed in `.env.local`: `SECTR_AGUI_URL=<that URL>`.
+If `sectr dev` says it picked another port (8420 was busy), put the
+`chat_oai` URL it printed in `.env.local`: `SECTR_AGUI_URL=<that URL>`.
 
-Open http://localhost:3000 and try these:
+Open http://localhost:3000 (the OpenAI Agents SDK agent) or
+http://localhost:3000/langgraph (the LangGraph one; the header switches
+between them) and try these on either:
 
 1. **Chat:** "Where is order 123?"
 2. **Approve:** "Please refund it." The agent pauses on the `refund` tool.
@@ -41,15 +51,16 @@ Open http://localhost:3000 and try these:
    (deliberately slow) lookup runs. The turn keeps going on Sectr, and the
    reloaded chat picks it back up.
 
-Without an `OPENAI_API_KEY` the agent answers from a scripted mock
-(`agent/fake.py`). To use a real model, set it in `agent/.env` (see
+Without an `OPENAI_API_KEY` both agents answer from a scripted mock
+(`agent/fake.py`, `agent/fake_graph.py`). To use a real model
+(`gpt-4o-mini` on both routes), set it in `agent/.env` (see
 `agent/.env.example`).
 
 ## Deploy
 
 ```sh
 cd agent
-sectr deploy                    # prints the deployed AG-UI URL
+sectr deploy                    # prints the deployed AG-UI URLs
 sectr secrets set OPENAI_API_KEY  # optional: use a real model in the cloud
 ```
 
@@ -57,7 +68,7 @@ Then deploy the Next.js app anywhere Node runs. Set:
 
 | Variable | Value |
 | --- | --- |
-| `SECTR_AGUI_URL` | the URL `sectr deploy` printed |
+| `SECTR_AGUI_URL` | the `chat_oai` URL `sectr deploy` printed |
 | `SECTR_INVOCATION_KEY` | your app's invocation key (dashboard → Settings → API keys). Server-side only. |
 
 The app's server is stateless: the Copilot Runtime runs with `SectrRunner`,
@@ -69,11 +80,18 @@ however you like (Vercel, a container, `next start`).
 
 | File | What it does |
 | --- | --- |
-| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with an `HttpAgent` pointed at `SECTR_AGUI_URL` (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
+| `agent/app.py` | The agent and its two routes: `/chat_oai` (OpenAI Agents SDK) and `/chat_langgraph` |
+| `agent/support_graph.py` | The same agent on LangGraph (`create_agent`), with the tools from `agent/graph_tools.py` |
+| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with one `HttpAgent` per route (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
 | `app/api/agent-token/route.ts` | Mints a Sectr user token (`sks_…`) for the current user. This is the only place the invocation key is used. |
 | `app/providers.tsx` | Fetches the token once per page load and passes it to CopilotKit. The Runtime forwards it to Sectr. |
-| `app/chat.tsx` | `CopilotSidebar`, plus `useInterrupt` for the approve/deny UI |
+| `app/chat.tsx` | `CopilotSidebar`, plus `useInterrupt` for the approve/deny UI, for one `agentId` |
+| `app/page.tsx`, `app/langgraph/page.tsx` | One chat page per agent |
 | `proxy.ts` | Stand-in for your auth: an anonymous user id cookie, and a `?thread=` id per conversation |
+
+There's no CopilotKit LangGraph integration here (`LangGraphAgent`, LangGraph
+Platform): Sectr serves AG-UI for every route whatever the framework, so the
+LangGraph agent is the same `HttpAgent` as the other one.
 
 `SectrRunner` comes from the [`@sectr/copilotkit`](https://www.npmjs.com/package/@sectr/copilotkit)
 package. It replaces CopilotKit's default in-memory runner: runs and
@@ -86,7 +104,8 @@ thread in its memory to any caller, which is why this starter replaces it.)
 In your app, replace the anonymous cookie with your signed-in user's id. Sectr
 never authenticates your users; it trusts your backend's mint call.
 
-Docs: [Connecting your frontend](https://docs.sectr.dev/getting-started/connecting-frontend/).
+Docs: [Connecting your frontend](https://docs.sectr.dev/getting-started/connecting-frontend/),
+[Using LangGraph](https://docs.sectr.dev/getting-started/langgraph/).
 
 ## Smoke test
 
@@ -94,8 +113,8 @@ Docs: [Connecting your frontend](https://docs.sectr.dev/getting-started/connecti
 SECTR_AGUI_URL=... [SECTR_INVOCATION_KEY=...] npm run smoke
 ```
 
-The smoke test runs a full turn, an approval interrupt, and the resume. It
-works against `sectr dev` or a deployed agent. CI runs it daily against the
+The smoke test runs a full turn, an approval interrupt, and the resume, on
+both routes. It works against `sectr dev` or a deployed agent. CI runs it daily against the
 live demo agent.
 
 ## License

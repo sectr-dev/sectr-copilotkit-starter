@@ -5,7 +5,10 @@ description = "Sectr agent: support-agent (CopilotKit starter)"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "sectr[openai-agents]>=0.0.7",
+    "sectr[openai-agents,langgraph]>=0.0.7",
     "openai-agents >= 0.22.3",
-    "openai >= 3.19.1"
+    "openai >= 3.19.1",
+    # the LangGraph route: create_agent + init_chat_model("openai:...")
+    "langchain >= 1.4.3",
+    "langchain-openai >= 1.6.7",
 ]
