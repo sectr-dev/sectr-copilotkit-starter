@@ -82,7 +82,7 @@ however you like (Vercel, a container, `next start`).
 | --- | --- |
 | `agent/app.py` | The agent and its two routes: `/chat_oai` (OpenAI Agents SDK) and `/chat_langgraph` |
 | `agent/support_graph.py` | The same agent on LangGraph (`create_agent`), with the tools from `agent/graph_tools.py` |
-| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with one `HttpAgent` per route (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
+| `app/api/copilotkit/[[...slug]]/route.ts` | The Copilot Runtime, with one `SectrAgent` per route (the quickstart uses `BuiltInAgent` here) and `SectrRunner` |
 | `app/api/agent-token/route.ts` | Mints a Sectr user token (`sks_…`) for the current user. This is the only place the invocation key is used. |
 | `app/providers.tsx` | Fetches the token once per page load and passes it to CopilotKit. The Runtime forwards it to Sectr. |
 | `app/chat.tsx` | `CopilotSidebar`, plus `useInterrupt` for the approve/deny UI, for one `agentId` |
@@ -91,11 +91,13 @@ however you like (Vercel, a container, `next start`).
 
 There's no CopilotKit LangGraph integration here (`LangGraphAgent`, LangGraph
 Platform): Sectr serves AG-UI for every route whatever the framework, so the
-LangGraph agent is the same `HttpAgent` as the other one.
+LangGraph agent is the same `SectrAgent` as the other one.
 
-`SectrRunner` comes from the [`@sectr/copilotkit`](https://www.npmjs.com/package/@sectr/copilotkit)
-package. It replaces CopilotKit's default in-memory runner: runs and
+`SectrAgent` and `SectrRunner` come from the [`@sectr/copilotkit`](https://www.npmjs.com/package/@sectr/copilotkit)
+package. `SectrRunner` replaces CopilotKit's default in-memory runner: runs and
 reconnects go straight to Sectr, so the server holds no conversation state.
+`SectrAgent` is `@ag-ui/client`'s `HttpAgent` plus reconnecting a reloaded
+page, which `SectrRunner` does through it.
 
 A user token can only see conversations owned by the user it was minted for,
 and because the Runtime keeps nothing, there's no copy anywhere else for
