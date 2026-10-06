@@ -99,6 +99,10 @@ reconnects go straight to Sectr, so the server holds no conversation state.
 `SectrAgent` is `@ag-ui/client`'s `HttpAgent` plus reconnecting a reloaded
 page, which `SectrRunner` does through it.
 
+`package.json` pins `@copilotkit/*` and `@ag-ui/client` to exact versions
+that match: each CopilotKit release pins its own `@ag-ui/client`, and a second
+copy of it doesn't type-check against CopilotKit's. Upgrade them together.
+
 A user token can only see conversations owned by the user it was minted for,
 and because the Runtime keeps nothing, there's no copy anywhere else for
 another user to reach. (CopilotKit's default in-memory runner serves every
