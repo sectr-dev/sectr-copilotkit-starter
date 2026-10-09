@@ -1,3 +1,4 @@
+# Thin wrapper: the checks live in the justfile (`just check`, `just smoke`).
 name: CI
 
 on:
@@ -12,15 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
-        env:
-          SECTR_AGUI_URL: https://api.sectr.dev/ag-ui/support-agent/chat_oai
+      - uses: astral-sh/setup-uv@v6
+      - run: just check
 
   # Against the live demo agent (`agent/`, deployed on Sectr). Needs the repo
   # secrets below, so it is skipped on forks.
@@ -29,10 +28,11 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm run smoke
+      - run: just smoke
         env:
           SECTR_AGUI_URL: ${{ secrets.SECTR_AGUI_URL }}
           SECTR_INVOCATION_KEY: ${{ secrets.SECTR_INVOCATION_KEY }}

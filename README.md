@@ -113,10 +113,20 @@ never authenticates your users; it trusts your backend's mint call.
 Docs: [Connecting your frontend](https://docs.sectr.dev/getting-started/connecting-frontend/),
 [Using LangGraph](https://docs.sectr.dev/getting-started/langgraph/).
 
+## Checks
+
+```sh
+just check
+```
+
+This is what CI runs: `npm ci`, lint and build, plus the agent
+(`agent/uv.lock` in sync, `uv sync --frozen`, and `app.py` importing with no
+provider key, as `sectr dev` and deploy need). Needs `just`, `uv` and Node 20+.
+
 ## Smoke test
 
 ```sh
-SECTR_AGUI_URL=... [SECTR_INVOCATION_KEY=...] npm run smoke
+SECTR_AGUI_URL=... [SECTR_INVOCATION_KEY=...] just smoke
 ```
 
 The smoke test runs a full turn, an approval interrupt, and the resume, on
