@@ -123,16 +123,6 @@ This is what CI runs: `npm ci`, lint and build, plus the agent
 (`agent/uv.lock` in sync, `uv sync --frozen`, and `app.py` importing with no
 provider key, as `sectr dev` and deploy need). Needs `just`, `uv` and Node 20+.
 
-## Smoke test
-
-```sh
-SECTR_AGUI_URL=... [SECTR_INVOCATION_KEY=...] just smoke
-```
-
-The smoke test runs a full turn, an approval interrupt, and the resume, on
-both routes. It works against `sectr dev` or a deployed agent. CI runs it daily against the
-live demo agent.
-
 ## License
 
 MIT

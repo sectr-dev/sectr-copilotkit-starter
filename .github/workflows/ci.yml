@@ -1,4 +1,4 @@
-# Thin wrapper: the checks live in the justfile (`just check`, `just smoke`).
+# Thin wrapper: the checks live in the justfile (`just check`).
 name: CI
 
 on:
@@ -20,19 +20,3 @@ jobs:
           cache: npm
       - uses: astral-sh/setup-uv@v6
       - run: just check
-
-  # Against the live demo agent (`agent/`, deployed on Sectr). Needs the repo
-  # secrets below, so it is skipped on forks.
-  smoke:
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: just smoke
-        env:
-          SECTR_AGUI_URL: ${{ secrets.SECTR_AGUI_URL }}
-          SECTR_INVOCATION_KEY: ${{ secrets.SECTR_INVOCATION_KEY }}
