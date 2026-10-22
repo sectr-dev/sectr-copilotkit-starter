@@ -1,6 +1,6 @@
 """Support-agent tools for the LangGraph route: the same two tools as
-tools.py (same names, arguments and results), so the UI, the smoke test and
-the approval card behave identically on both routes.
+tools.py (same names, arguments and results), so the UI and the approval
+card behave identically on both routes.
 
 Why these import sectr when tools.py doesn't: LangGraph has no per-tool
 approval without its checkpointer, and Sectr runs graphs without one (the
